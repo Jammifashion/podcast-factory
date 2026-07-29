@@ -92,7 +92,10 @@ def main() -> None:
         topics = extract_json_array(resp.text)
     except json.JSONDecodeError:
         write_json(args.podcast, "topics.json", {"raw": resp.text, "parse_error": True})
-        raise SystemExit("Gemini-Antwort war kein valides JSON – siehe topics.json")
+        print("=== ROHE GEMINI-ANTWORT (Anfang) ===")
+        print(resp.text[:2000])
+        print("=== ROHE GEMINI-ANTWORT (Ende) ===")
+        raise SystemExit("Gemini-Antwort war kein valides JSON – siehe Log oben")
 
     print(f"  {len(topics)} Themen recherchiert")
     write_json(args.podcast, "topics.json", topics)
