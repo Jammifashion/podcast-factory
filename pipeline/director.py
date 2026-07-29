@@ -15,7 +15,7 @@ import anthropic
 
 from .common import load_config, load_prompt, parse_args, read_out, write_json
 
-MODEL = "claude-sonnet-5"
+MODEL = "claude-haiku-4-5-20251001"
 
 
 def main() -> None:
