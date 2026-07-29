@@ -25,7 +25,7 @@ script:
 audio:
   max_segment_chars: 3000
  voices:
-  JAMES: "K5ZVtkkBnuPY6YqXs70E"
+  JAMES: "d8EUTXcVLuX9V2vMjSOw"
   LEXI: "NE7AIW5DoJ7lUosXV2KR"
   intro_music: ""   # optionaler Pfad zu einer mp3 im Repo, z.B. "assets/intro.mp3"
   outro_music: ""
