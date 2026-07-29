@@ -4,6 +4,7 @@ Finde die {num_topics} relevantesten Themen der letzten {lookback_days} Tage.
 
 Fokus:
 {focus}
+{used_hint}
 
 Vorgehen:
 - Nutze die Google-Suche für aktuelle, belegbare Meldungen.
