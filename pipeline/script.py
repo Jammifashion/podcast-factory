@@ -13,6 +13,7 @@ from .common import load_config, load_prompt, parse_args, read_out, write_out
 
 MODEL = "claude-sonnet-5"
 
+
 def main() -> None:
     args = parse_args()
     cfg = load_config(args.podcast)
@@ -34,7 +35,7 @@ def main() -> None:
     )
 
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-   resp = client.messages.create(
+    resp = client.messages.create(
         model=MODEL,
         max_tokens=4000,
         messages=[{"role": "user", "content": prompt}],
