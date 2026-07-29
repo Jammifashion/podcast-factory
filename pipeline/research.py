@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
+import re
 
 from google import genai
 from google.genai import types
@@ -15,6 +15,23 @@ from google.genai import types
 from .common import load_config, load_prompt, parse_args, out_path, write_json
 
 MODEL = "gemini-3.6-flash"
+
+
+def extract_json_array(text: str):
+    """Holt das JSON-Array robust aus der Antwort, auch mit Text drumherum."""
+    text = text.strip()
+    # Code-Zäune entfernen
+    text = text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    # Direkter Versuch
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    # Fallback: das erste [ ... ] herausschneiden
+    match = re.search(r"\[.*\]", text, re.DOTALL)
+    if match:
+        return json.loads(match.group(0))
+    raise json.JSONDecodeError("Kein JSON-Array gefunden", text, 0)
 
 
 def load_used_topics(podcast: str) -> list[str]:
@@ -41,7 +58,6 @@ def main() -> None:
     r = cfg["research"]
     test_mode = cfg.get("test_mode", False)
 
-    # Im Testmodus nur 1 Thema recherchieren
     num_topics = 1 if test_mode else r["num_topics"]
     if test_mode:
         print("  TESTMODUS: 1 Thema, ~3 Minuten")
@@ -50,8 +66,8 @@ def main() -> None:
     used_hint = ""
     if used_topics:
         used_hint = (
-            f"\n\nBereits behandelte Themen (NICHT nochmal verwenden):\n"
-            + "\n".join(f"- {t}" for t in used_topics[-30:])  # max. letzte 30
+            "\n\nBereits behandelte Themen (NICHT nochmal verwenden):\n"
+            + "\n".join(f"- {t}" for t in used_topics[-30:])
         )
 
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
@@ -72,13 +88,10 @@ def main() -> None:
         ),
     )
 
-    text = resp.text.strip()
-    text = text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-
     try:
-        topics = json.loads(text)
+        topics = extract_json_array(resp.text)
     except json.JSONDecodeError:
-        write_json(args.podcast, "topics.json", {"raw": text, "parse_error": True})
+        write_json(args.podcast, "topics.json", {"raw": resp.text, "parse_error": True})
         raise SystemExit("Gemini-Antwort war kein valides JSON – siehe topics.json")
 
     print(f"  {len(topics)} Themen recherchiert")
