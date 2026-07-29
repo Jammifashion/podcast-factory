@@ -11,8 +11,7 @@ import anthropic
 
 from .common import load_config, load_prompt, parse_args, read_out, write_out
 
-MODEL = "claude-sonnet-4-6"
-
+MODEL = "claude-sonnet-5"
 
 def main() -> None:
     args = parse_args()
