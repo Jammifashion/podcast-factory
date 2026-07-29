@@ -14,7 +14,7 @@ from google.genai import types
 
 from .common import load_config, load_prompt, parse_args, out_path, write_json
 
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-3.6-flash"
 
 
 def load_used_topics(podcast: str) -> list[str]:
@@ -69,7 +69,6 @@ def main() -> None:
         contents=prompt,
         config=types.GenerateContentConfig(
             tools=[types.Tool(google_search=types.GoogleSearch())],
-            temperature=0.4,
         ),
     )
 
