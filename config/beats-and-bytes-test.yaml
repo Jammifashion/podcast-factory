@@ -28,8 +28,8 @@ script:
 audio:
   max_segment_chars: 3000
   voices:
-    JAMES: "utkd5fchbspYG3Ld0zt0"
-    LEXI: "SJJe86Va82zRzg6zi2dX"
+    JAMES: "K5ZVtkkBnuPY6YqXs70E"
+    LEXI: "NE7AIW5DoJ7lUosXV2KR"
   intro_music: ""
   outro_music: ""
   loudness_lufs: -16
