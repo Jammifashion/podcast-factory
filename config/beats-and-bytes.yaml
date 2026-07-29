@@ -24,9 +24,9 @@ script:
 # Regie / Audio
 audio:
   max_segment_chars: 3000
-  voices:
-    JAMES: "PLATZHALTER_VOICE_ID_JAMES"   # <- ElevenLabs Voice-ID eintragen
-    LEXI: "PLATZHALTER_VOICE_ID_LEXI"
+ voices:
+  JAMES: "utkd5fchbspYG3Ld0zt0"
+  LEXI: "SJJe86Va82zRzg6zi2dX"
   intro_music: ""   # optionaler Pfad zu einer mp3 im Repo, z.B. "assets/intro.mp3"
   outro_music: ""
   loudness_lufs: -16
