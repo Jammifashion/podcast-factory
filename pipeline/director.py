@@ -34,7 +34,6 @@ def main() -> None:
     resp = client.messages.create(
         model=MODEL,
         max_tokens=8000,
-        temperature=0.3,  # Formatierung soll präzise sein, nicht kreativ
         messages=[{"role": "user", "content": prompt}],
     )
 
