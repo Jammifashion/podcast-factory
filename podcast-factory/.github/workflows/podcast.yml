@@ -1,0 +1,131 @@
+name: Podcast Factory
+
+# Zwei Trigger:
+#  - schedule: läuft automatisch (Standard: alle 3 Tage um 06:00 UTC)
+#  - workflow_dispatch: manueller Start per Knopfdruck, mit Wahl des Podcasts
+on:
+  schedule:
+    - cron: "0 6 */3 * *"
+  workflow_dispatch:
+    inputs:
+      podcast:
+        description: "Welcher Podcast? (Dateiname ohne .yaml aus /config)"
+        required: true
+        default: "beats-and-bytes"
+        type: string
+
+# Ein laufender Sprint pro Podcast reicht – ältere Läufe abbrechen.
+concurrency:
+  group: podcast-${{ github.event.inputs.podcast || 'beats-and-bytes' }}
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # PHASE 1: Recherche -> Script -> Regie. Erzeugt dialogue.json. Kostet fast
+  # nichts (nur LLM-Tokens), rendert noch KEIN teures Audio.
+  # ---------------------------------------------------------------------------
+  produce:
+    runs-on: ubuntu-latest
+    outputs:
+      podcast: ${{ steps.vars.outputs.podcast }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Dependencies installieren
+        run: pip install -r requirements.txt
+
+      - name: Podcast-Variable bestimmen
+        id: vars
+        run: echo "podcast=${{ github.event.inputs.podcast || 'beats-and-bytes' }}" >> "$GITHUB_OUTPUT"
+
+      - name: 1) Recherche (Gemini)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python -m pipeline.research --podcast ${{ steps.vars.outputs.podcast }}
+
+      - name: 2) Script (Claude)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python -m pipeline.script --podcast ${{ steps.vars.outputs.podcast }}
+
+      - name: 3) Regie / v3-Dialogue-JSON (Claude)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python -m pipeline.director --podcast ${{ steps.vars.outputs.podcast }}
+
+      - name: Zwischenergebnisse als Artefakt sichern
+        uses: actions/upload-artifact@v4
+        with:
+          name: draft-${{ steps.vars.outputs.podcast }}
+          path: |
+            out/${{ steps.vars.outputs.podcast }}/topics.json
+            out/${{ steps.vars.outputs.podcast }}/script.md
+            out/${{ steps.vars.outputs.podcast }}/dialogue.json
+          retention-days: 14
+
+      - name: Benachrichtigung "Script bereit zur Freigabe"
+        if: ${{ always() }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -m pipeline.notify \
+            --stage draft \
+            --podcast ${{ steps.vars.outputs.podcast }} \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  # ---------------------------------------------------------------------------
+  # PRODUCTION LOCK: dieser Job hängt an der Environment "production-lock".
+  # Konfigurierst du dort "Required reviewers", pausiert der Workflow hier und
+  # wartet auf deine Freigabe (E-Mail / GitHub / Handy-Push). Erst danach wird
+  # das teure Audio gerendert.
+  # ---------------------------------------------------------------------------
+  render:
+    needs: produce
+    runs-on: ubuntu-latest
+    environment: production-lock
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Dependencies + ffmpeg
+        run: |
+          pip install -r requirements.txt
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Draft-Artefakt holen
+        uses: actions/download-artifact@v4
+        with:
+          name: draft-${{ needs.produce.outputs.podcast }}
+          path: out/${{ needs.produce.outputs.podcast }}
+
+      - name: 4) Audio rendern (ElevenLabs v3 + Auphonic)
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          AUPHONIC_API_KEY: ${{ secrets.AUPHONIC_API_KEY }}
+        run: python -m pipeline.render --podcast ${{ needs.produce.outputs.podcast }}
+
+      - name: Fertiges Audio als Artefakt
+        uses: actions/upload-artifact@v4
+        with:
+          name: episode-${{ needs.produce.outputs.podcast }}
+          path: out/${{ needs.produce.outputs.podcast }}/final.mp3
+          retention-days: 30
+
+      - name: Benachrichtigung "Audio fertig zum Prüfen"
+        if: ${{ always() }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -m pipeline.notify \
+            --stage audio \
+            --podcast ${{ needs.produce.outputs.podcast }} \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

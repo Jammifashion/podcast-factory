@@ -1,0 +1,35 @@
+# Ein Podcast = eine Config. Neuer Podcast? Datei kopieren, Werte anpassen,
+# beim manuellen Start den Dateinamen (ohne .yaml) als "podcast" angeben.
+
+name: "Beats & Bytes"
+language: "de"
+description: "Deutschsprachiger KI-News-Podcast, alle 3 Tage, 8-12 Minuten."
+
+# Recherche
+research:
+  lookback_days: 3
+  num_topics: 4
+  focus: >
+    KI-News mit Relevanz für ein deutsches Tech-Publikum: Modell-Releases,
+    EU-Regulierung, große Produkt-Launches, Forschung mit Praxisfolgen,
+    deutsche/europäische KI-Wirtschaft.
+
+# Script
+script:
+  target_words: 1500        # ~10 Minuten
+  hosts:
+    JAMES: "Der Enthusiast. Treibt Themen voran, ordnet ein, schnell begeistert."
+    LEXI: "Die kritische Stimme. Fragt nach, bremst Hype, bringt Praxisbezug und Humor."
+
+# Regie / Audio
+audio:
+  max_segment_chars: 3000
+  voices:
+    JAMES: "PLATZHALTER_VOICE_ID_JAMES"   # <- ElevenLabs Voice-ID eintragen
+    LEXI: "PLATZHALTER_VOICE_ID_LEXI"
+  intro_music: ""   # optionaler Pfad zu einer mp3 im Repo, z.B. "assets/intro.mp3"
+  outro_music: ""
+  loudness_lufs: -16
+
+# Pflichttext (EU AI Act Art. 50) - wird im Script-Prompt erzwungen.
+ai_disclosure: "Kleine Erinnerung: Unsere Stimmen sind KI-generiert."
